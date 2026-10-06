@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#F3F4F6] text-[#0F172A] dark:bg-[#0F172A] dark:text-slate-100 font-sans antialiased overflow-x-hidden transition-colors duration-200;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  ::selection {
+    background-color: #7C3AED;
+    color: #FFFFFF;
+  }
+}
+
+/* Custom Tech Scrollbars with Purple Accent */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F3F4F6;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #0F172A;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C4B5FD;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #7C3AED;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #844FC1;
+}
+
+/* Sophisticated Purple & Charcoal Card Utilities */
+.light-card {
+  background: #ffffff;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 4px 12px -2px rgba(124, 58, 237, 0.05), 0 2px 4px -1px rgba(15, 23, 42, 0.03);
+  transition: all 0.2s ease-in-out;
+}
+
+.dark .light-card {
+  background: #0F172A;
+  border-color: #1E293B;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4), 0 4px 8px -2px rgba(124, 58, 237, 0.15);
+}
+
+.light-card-hover:hover {
+  border-color: #C4B5FD;
+  box-shadow: 0 12px 30px -5px rgba(124, 58, 237, 0.12), 0 8px 12px -6px rgba(132, 79, 193, 0.08);
+  transform: translateY(-2px);
+}
+
+.dark .light-card-hover:hover {
+  border-color: #7C3AED;
+  box-shadow: 0 12px 30px -5px rgba(124, 58, 237, 0.35), 0 8px 12px -6px rgba(132, 79, 193, 0.25);
+  transform: translateY(-2px);
+}
+
+/* Gradient accents */
+.bg-purple-gradient {
+  background: linear-gradient(135deg, #7C3AED 0%, #844FC1 100%);
+}
+
+.bg-purple-gradient-hover:hover {
+  background: linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%);
+}
+
+.border-purple-glow {
+  border-color: rgba(124, 58, 237, 0.3);
+}
+
+/* Print Styles for Purchase Orders */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-po, #printable-po * {
+    visibility: visible;
+  }
+  #printable-po {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    color: #000;
+    background: #fff;
+    padding: 24px;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Subtle badge pulse */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+
