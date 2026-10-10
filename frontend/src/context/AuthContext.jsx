@@ -1,96 +1,86 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import api from '../services/api';
 
 const AuthContext = createContext();
 
-export const registeredAccounts = [
-  {
-    id: "USR-B-101",
-    name: "Vikram Malhotra",
-    email: "builder@buildcorp.com",
-    role: "BUILDER",
-    title: "Chief Site Procurement Head",
-    organization: "BuildCorp Infrastructure Ltd.",
-    phone: "+91 98765 43210",
-    gstin: "07AAACB9912E1ZB",
-    address: "Plot 104, Cyber City, Gurgaon, HR - 122002",
-    badge: "Builder Admin",
-    avatarColor: "bg-amber-500 text-slate-950"
-  },
-  {
-    id: "USR-S-201",
-    name: "Rahul Verma",
-    email: "supplier@apexsteel.com",
-    role: "SUPPLIER",
-    title: "Regional B2B Sales Manager",
-    organization: "Apex Steel Mills & Multi-Supplier Hub",
-    phone: "+91 98112 88776",
-    gstin: "27AAACU9988G1Z2",
-    address: "Industrial Area Phase 2, Mumbai, MH - 400015",
-    badge: "Supplier Vendor",
-    avatarColor: "bg-blue-600 text-white"
-  }
-];
-
 export const AuthProvider = ({ children }) => {
+  // 1. Initialize user synchronously from localStorage so page reload does not flicker or redirect
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('portal_auth_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const stored = localStorage.getItem('user');
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      console.warn('Failed to parse cached user:', e);
+      return null;
+    }
   });
 
-  const [authError, setAuthError] = useState(null);
+  // 2. Set loading state: if we have a token but no user, we are validating; if we have user or no token, don't block
+  const [loading, setLoading] = useState(() => {
+    const token = localStorage.getItem('token');
+    const stored = localStorage.getItem('user');
+    return !!token && !stored;
+  });
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('portal_auth_user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('portal_auth_user');
-    }
-  }, [user]);
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const response = await api.get('/auth/me');
+          const freshUser = response.data.user;
+          const normalized = {
+            ...freshUser,
+            role: freshUser.role || freshUser.txt_Role,
+            username: freshUser.username || freshUser.txt_Username,
+            userId: freshUser.userId || freshUser.int_User_Id
+          };
+          setUser(normalized);
+          localStorage.setItem('user', JSON.stringify(normalized));
+        } catch (error) {
+          console.error('Session verification failed on reload:', error.message);
+          // Only clear if server returns 401 / token invalid, not network glitch
+          if (error.message?.includes('token') || error.message?.includes('expired') || error.message?.includes('Authentication')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setUser(null);
+          }
+        }
+      } else {
+        setUser(null);
+        localStorage.removeItem('user');
+      }
+      setLoading(false);
+    };
 
-  const login = (emailOrUsername, password) => {
-    setAuthError(null);
-    const query = (emailOrUsername || '').toLowerCase().trim();
+    checkAuth();
+  }, []);
 
-    if (!query) {
-      setAuthError("Please enter your registered email or username.");
-      return false;
-    }
+  const login = async (usernameOrEmail, password) => {
+    const response = await api.post('/auth/login', { usernameOrEmail, password });
+    const { token, user: loggedUser } = response.data;
 
-    let matchedUser = null;
+    const normalized = {
+      ...loggedUser,
+      role: loggedUser.role || loggedUser.txt_Role,
+      username: loggedUser.username || loggedUser.txt_Username,
+      userId: loggedUser.userId || loggedUser.int_User_Id
+    };
 
-    if (query.includes('supplier') || query === 'supplier@apexsteel.com') {
-      matchedUser = registeredAccounts.find(a => a.role === 'SUPPLIER');
-    } else if (query.includes('builder') || query === 'builder@buildcorp.com') {
-      matchedUser = registeredAccounts.find(a => a.role === 'BUILDER');
-    } else {
-      matchedUser = registeredAccounts.find(a => a.email.toLowerCase() === query) || registeredAccounts[0];
-    }
-
-    setUser(matchedUser);
-    return true;
-  };
-
-  const demoLogin = (role) => {
-    setAuthError(null);
-    const target = registeredAccounts.find(a => a.role === role);
-    setUser(target);
-    return target;
-  };
-
-  const updateProfile = (updatedFields) => {
-    setUser(prev => {
-      const updated = { ...prev, ...updatedFields };
-      return updated;
-    });
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(normalized));
+    setUser(normalized);
+    return normalized;
   };
 
   const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
-    setAuthError(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, demoLogin, logout, updateProfile, authError, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
